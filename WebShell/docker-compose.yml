@@ -1,0 +1,11 @@
+version: '3.4'
+
+services:
+  webshell:
+    container_name: 'webshell_api'
+    image: ${DOCKER_REGISTRY-}webshell
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+    - 8080:80
