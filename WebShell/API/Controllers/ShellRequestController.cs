@@ -8,6 +8,7 @@ using WebShell.API.Hubs.Clients;
 using WebShell.Data.Repository;
 using WebShell.Domain;
 using System.Web.Http.Cors;
+using System.Text;
 
 namespace WebShell.API.Controllers
 {
@@ -52,15 +53,33 @@ namespace WebShell.API.Controllers
                 cmd.StartInfo.Arguments = $"/C {input}";
 
                 cmd.Start();
+                cmd.BeginOutputReadLine();
+                cmd.BeginErrorReadLine();
 
-                cmd.StandardInput.Flush();
-                cmd.StandardInput.Close();
-                string output = cmd.StandardOutput.ReadToEnd();
-                string error = cmd.StandardError.ReadToEnd();
-                cmd.WaitForExit();
+                var output = new StringBuilder();
+                var error = new StringBuilder();
 
-                shellRequest.Output = output;
-                shellRequest.Error = error;
+                cmd.OutputDataReceived += (sender, args) =>
+                {
+                    Console.WriteLine($">>Received output data^ {args.Data}");
+                    output.AppendLine(args.Data);
+                };
+                cmd.ErrorDataReceived += (sender, args) =>
+                {
+                    Console.WriteLine($">>Received error data^ {args.Data}");
+                    error.AppendLine(args.Data);
+                };
+
+                if (!cmd.WaitForExit(5000))
+                {
+                    Console.WriteLine(">> The process execution is too long, closing the process");
+                    cmd.Close();
+
+                    Console.WriteLine("The process has been closed");
+                }
+
+                shellRequest.Output = output.ToString();
+                shellRequest.Error = error.ToString();
 
             }
             Console.WriteLine($">> Request id: {shellRequest.Id}");
